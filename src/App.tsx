@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { planets, nearbyStars, galaxies, universeFacts, scaleComparison, CelestialBody } from './data';
 
-type ViewMode = 'solar' | 'inner' | 'outer' | 'universe' | 'compare';
+type ViewMode = 'solar' | 'inner' | 'outer' | 'universe' | 'compare' | 'tour';
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('solar');
@@ -16,6 +16,10 @@ function App() {
   const [showFacts, setShowFacts] = useState(false);
   const [currentFact, setCurrentFact] = useState(0);
   const [cometAngle, setCometAngle] = useState(0);
+  const [tourIndex, setTourIndex] = useState(0);
+  const [showOrbits, setShowOrbits] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
+  const [hoveredPlanet, setHoveredPlanet] = useState<string | null>(null);
   const animationRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
@@ -45,6 +49,20 @@ function App() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Tour mode
+  useEffect(() => {
+    if (viewMode === 'tour' && isPlaying) {
+      const interval = setInterval(() => {
+        setTourIndex(prev => {
+          const next = (prev + 1) % planets.length;
+          setSelectedBody(planets[next]);
+          return next;
+        });
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [viewMode, isPlaying]);
 
   // Mouse wheel zoom
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -130,8 +148,8 @@ function App() {
   // Filter planets by view mode
   const getVisiblePlanets = () => {
     switch (viewMode) {
-      case 'inner': return planets.slice(0, 5); // Mercury to Ceres (inner + asteroid belt)
-      case 'outer': return planets.slice(4); // Jupiter onwards
+      case 'inner': return planets.slice(0, 5);
+      case 'outer': return planets.slice(4);
       default: return planets;
     }
   };
@@ -190,20 +208,22 @@ function App() {
           atmosphere: 'Плазма (H, He)',
         })}
       >
-        <div className="absolute text-white/80 text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium"
-          style={{
-            bottom: 40,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            textShadow: '0 0 8px rgba(0,0,0,0.9)',
-          }}
-        >
-          Солнце ☀
-        </div>
+        {showLabels && (
+          <div className="absolute text-white/80 text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium"
+            style={{
+              bottom: 40,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              textShadow: '0 0 8px rgba(0,0,0,0.9)',
+            }}
+          >
+            Солнце ☀
+          </div>
+        )}
       </div>
 
       {/* Orbit paths */}
-      {planets.map((planet, i) => (
+      {showOrbits && planets.map((planet, i) => (
         <div
           key={`orbit-${i}`}
           className="orbit-path"
@@ -259,6 +279,7 @@ function App() {
       {/* Planets */}
       {planets.map((planet, i) => {
         const pos = getPlanetPosition(i, orbitScale);
+        const isHovered = hoveredPlanet === planet.id;
         return (
           <div key={`planet-group-${i}`}>
             <div
@@ -269,10 +290,14 @@ function App() {
                 background: planet.gradient,
                 left: `calc(50% + ${pos.x}px - ${planet.radius}px)`,
                 top: `calc(50% + ${pos.y}px - ${planet.radius}px)`,
-                boxShadow: `0 0 ${planet.radius}px ${planet.color}40, inset -${planet.radius/3}px -${planet.radius/3}px ${planet.radius/2}px rgba(0,0,0,0.4)`,
+                boxShadow: isHovered 
+                  ? `0 0 ${planet.radius * 2}px ${planet.color}80, inset -${planet.radius/3}px -${planet.radius/3}px ${planet.radius/2}px rgba(0,0,0,0.4)`
+                  : `0 0 ${planet.radius}px ${planet.color}40, inset -${planet.radius/3}px -${planet.radius/3}px ${planet.radius/2}px rgba(0,0,0,0.4)`,
                 opacity: viewMode === 'inner' && i > 4 ? 0.2 : viewMode === 'outer' && i < 4 ? 0.2 : 1,
               }}
               onClick={() => setSelectedBody(planet)}
+              onMouseEnter={() => setHoveredPlanet(planet.id)}
+              onMouseLeave={() => setHoveredPlanet(null)}
             >
               {/* Saturn ring */}
               {planet.hasRing && (
@@ -305,19 +330,21 @@ function App() {
                 />
               )}
               {/* Hover label */}
-              <div 
-                className="absolute text-white text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium"
-                style={{
-                  bottom: planet.radius * 2 + 8,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  textShadow: '0 0 8px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,1)',
-                  fontSize: '11px',
-                }}
-              >
-                {planet.nameRu}
-                {planet.type === 'dwarf_planet' && <span className="text-[9px] text-white/50 ml-1">(карлик.)</span>}
-              </div>
+              {showLabels && (
+                <div 
+                  className="absolute text-white text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium"
+                  style={{
+                    bottom: planet.radius * 2 + 8,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    textShadow: '0 0 8px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,1)',
+                    fontSize: '11px',
+                  }}
+                >
+                  {planet.nameRu}
+                  {planet.type === 'dwarf_planet' && <span className="text-[9px] text-white/50 ml-1">(карлик.)</span>}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -416,10 +443,6 @@ function App() {
               <stop offset="15%" stopColor="#ffaa00" stopOpacity="0.5" />
               <stop offset="40%" stopColor="#6a4a8a" stopOpacity="0.3" />
               <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="armGrad">
-              <stop offset="0%" stopColor="rgba(180, 160, 220, 0.4)" />
-              <stop offset="100%" stopColor="rgba(100, 80, 160, 0)" />
             </radialGradient>
             <filter id="glow">
               <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -703,6 +726,59 @@ function App() {
     );
   };
 
+  // Render Tour view
+  const renderTour = () => (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="text-center fade-in">
+        <div className="mb-8">
+          <div
+            key={tourIndex}
+            className="mx-auto rounded-full mb-4 planet-appear"
+            style={{
+              width: 120,
+              height: 120,
+              background: planets[tourIndex].gradient,
+              boxShadow: `0 0 40px ${planets[tourIndex].color}60, 0 0 80px ${planets[tourIndex].color}30`,
+            }}
+          />
+          <h2 className="text-white text-3xl font-bold mb-2">{planets[tourIndex].nameRu}</h2>
+          <p className="text-white/40 text-sm">{planets[tourIndex].name}</p>
+        </div>
+        <p className="text-white/70 text-base max-w-md mx-auto mb-6 leading-relaxed">
+          {planets[tourIndex].description}
+        </p>
+        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto text-left">
+          <div className="bg-white/5 rounded-lg p-3">
+            <div className="text-white/40 text-[10px] uppercase tracking-wider">Радиус</div>
+            <div className="text-white text-sm font-medium">{planets[tourIndex].realRadius}</div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-3">
+            <div className="text-white/40 text-[10px] uppercase tracking-wider">Период</div>
+            <div className="text-white text-sm font-medium">{planets[tourIndex].orbitalPeriod}</div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-3">
+            <div className="text-white/40 text-[10px] uppercase tracking-wider">От Солнца</div>
+            <div className="text-white text-sm font-medium">{planets[tourIndex].distanceFromSun}</div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-3">
+            <div className="text-white/40 text-[10px] uppercase tracking-wider">Спутники</div>
+            <div className="text-white text-sm font-medium">{planets[tourIndex].moons ?? 0}</div>
+          </div>
+        </div>
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {planets.map((_, i) => (
+            <div
+              key={i}
+              className={`w-2 h-2 rounded-full transition-all ${
+                i === tourIndex ? 'bg-indigo-500 w-6' : 'bg-white/20'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div 
       className="relative w-full h-full overflow-hidden bg-[#050510] select-none"
@@ -726,9 +802,10 @@ function App() {
       {viewMode === 'outer' && renderSolarSystem()}
       {viewMode === 'universe' && renderUniverse()}
       {viewMode === 'compare' && renderComparison()}
+      {viewMode === 'tour' && renderTour()}
 
       {/* Info Panel */}
-      {selectedBody && (
+      {selectedBody && viewMode !== 'tour' && (
         <div className="info-panel absolute top-4 right-4 w-80 max-h-[85vh] overflow-y-auto p-5 text-white fade-in z-50">
           <button
             onClick={() => setSelectedBody(null)}
@@ -793,7 +870,7 @@ function App() {
       )}
 
       {/* Rotating facts ticker */}
-      {showFacts && viewMode !== 'universe' && (
+      {showFacts && viewMode !== 'universe' && viewMode !== 'tour' && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 fade-in">
           <div className="controls-panel px-4 py-2 flex items-center gap-2">
             <span className="text-lg">{universeFacts[currentFact].icon}</span>
@@ -809,15 +886,16 @@ function App() {
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50">
         <div className="controls-panel flex gap-1 p-1">
           {[
-            { mode: 'solar' as ViewMode, label: '🌍 Вся система', icon: '' },
-            { mode: 'inner' as ViewMode, label: '☀️ Внутренние', icon: '' },
-            { mode: 'outer' as ViewMode, label: '🪐 Внешние', icon: '' },
-            { mode: 'universe' as ViewMode, label: '🌌 Вселенная', icon: '' },
-            { mode: 'compare' as ViewMode, label: '📏 Размеры', icon: '' },
+            { mode: 'solar' as ViewMode, label: '🌍 Вся система' },
+            { mode: 'inner' as ViewMode, label: '☀️ Внутренние' },
+            { mode: 'outer' as ViewMode, label: '🪐 Внешние' },
+            { mode: 'universe' as ViewMode, label: '🌌 Вселенная' },
+            { mode: 'compare' as ViewMode, label: '📏 Размеры' },
+            { mode: 'tour' as ViewMode, label: '🎯 Тур' },
           ].map(({ mode, label }) => (
             <button
               key={mode}
-              onClick={() => { setViewMode(mode); setZoom(1); setPan({ x: 0, y: 0 }); }}
+              onClick={() => { setViewMode(mode); setZoom(1); setPan({ x: 0, y: 0 }); setSelectedBody(null); }}
               className={`px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap ${
                 viewMode === mode
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
@@ -831,7 +909,7 @@ function App() {
       </div>
 
       {/* Controls */}
-      {viewMode !== 'universe' && viewMode !== 'compare' && (
+      {viewMode !== 'universe' && viewMode !== 'compare' && viewMode !== 'tour' && (
         <div className="controls-panel absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 flex items-center gap-5 z-50">
           {/* Play/Pause */}
           <button
@@ -902,6 +980,22 @@ function App() {
             </button>
           </div>
 
+          {/* Toggle buttons */}
+          <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+            <button
+              onClick={() => setShowOrbits(!showOrbits)}
+              className={`text-[10px] px-2 py-1 rounded transition-all ${showOrbits ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+            >
+              ◯ Орбиты
+            </button>
+            <button
+              onClick={() => setShowLabels(!showLabels)}
+              className={`text-[10px] px-2 py-1 rounded transition-all ${showLabels ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white hover:bg-white/10'}`}
+            >
+              🏷️ Названия
+            </button>
+          </div>
+
           {/* Reset view */}
           <button
             onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
@@ -934,6 +1028,41 @@ function App() {
         </div>
       )}
 
+      {/* Tour controls */}
+      {viewMode === 'tour' && (
+        <div className="controls-panel absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 flex items-center gap-4 z-50">
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="w-9 h-9 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all"
+          >
+            {isPlaying ? (
+              <svg width="12" height="14" viewBox="0 0 14 16" fill="white">
+                <rect x="1" y="1" width="4" height="14" rx="1" />
+                <rect x="9" y="1" width="4" height="14" rx="1" />
+              </svg>
+            ) : (
+              <svg width="12" height="14" viewBox="0 0 14 16" fill="white">
+                <path d="M2 1.5L12.5 8L2 14.5V1.5Z" />
+              </svg>
+            )}
+          </button>
+          <span className="text-white/60 text-xs">Автоматический тур по планетам</span>
+          <div className="flex gap-1">
+            {planets.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setTourIndex(i); setSelectedBody(planets[i]); }}
+                className={`w-6 h-6 rounded-full text-[9px] transition-all ${
+                  i === tourIndex ? 'bg-indigo-600 text-white' : 'bg-white/10 text-white/50 hover:bg-white/20'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Universe facts overlay */}
       {viewMode === 'universe' && showFacts && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 fade-in">
@@ -954,7 +1083,7 @@ function App() {
       )}
 
       {/* Planet list sidebar */}
-      {viewMode !== 'universe' && viewMode !== 'compare' && (
+      {viewMode !== 'universe' && viewMode !== 'compare' && viewMode !== 'tour' && (
         <div className="absolute left-3 top-20 z-50 flex flex-col gap-0.5 max-h-[60vh] overflow-y-auto">
           {planets.map((planet) => (
             <button
@@ -981,17 +1110,19 @@ function App() {
       <div className="absolute top-4 left-4 z-40">
         <h1 className="text-white text-lg font-bold tracking-wide flex items-center gap-2">
           {viewMode === 'universe' ? '🌌 Вселенная' : 
-           viewMode === 'compare' ? '📏 Сравнение размеров' : '☀️ Солнечная система'}
+           viewMode === 'compare' ? '📏 Сравнение размеров' :
+           viewMode === 'tour' ? '🎯 Тур по планетам' : '☀️ Солнечная система'}
         </h1>
         <p className="text-white/30 text-[10px] mt-0.5">
           {viewMode === 'universe' ? 'Масштабы космоса' : 
            viewMode === 'compare' ? 'Относительные размеры планет' :
+           viewMode === 'tour' ? 'Автоматическая презентация' :
            'Кликните на планету • Колёсико мыши для зума • Перетаскивание для навигации'}
         </p>
       </div>
 
       {/* Zoom indicator */}
-      {zoom !== 1 && viewMode !== 'universe' && viewMode !== 'compare' && (
+      {zoom !== 1 && viewMode !== 'universe' && viewMode !== 'compare' && viewMode !== 'tour' && (
         <div className="absolute bottom-20 right-4 z-40 text-white/30 text-[10px]">
           Зум: {(zoom * 100).toFixed(0)}%
         </div>
