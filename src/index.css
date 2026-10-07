@@ -15,12 +15,14 @@ html, body, #root {
 }
 
 body {
-  background: #0a0a1a;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #050510;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: white;
 }
 
+/* Stars animation */
 @keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
+  0%, 100% { opacity: 0.2; }
   50% { opacity: 1; }
 }
 
@@ -32,6 +34,7 @@ body {
   animation-delay: var(--delay);
 }
 
+/* Sun glow */
 @keyframes sunPulse {
   0%, 100% { 
     box-shadow: 0 0 60px 20px rgba(255, 200, 50, 0.6), 
@@ -49,85 +52,95 @@ body {
   animation: sunPulse 3s ease-in-out infinite;
 }
 
+/* Orbit paths */
 .orbit-path {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 50%;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  transition: border-color 0.3s;
 }
 
 .orbit-path:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
+/* Planets */
 .planet {
   position: absolute;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   z-index: 10;
 }
 
 .planet:hover {
-  transform: scale(1.5);
+  transform: scale(1.6) !important;
   z-index: 20;
 }
 
-.planet-label {
-  position: absolute;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 10px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.planet:hover + .planet-label,
-.planet:hover ~ .planet-label {
-  opacity: 1;
-}
-
+/* Glass panels */
 .info-panel {
-  backdrop-filter: blur(20px);
-  background: rgba(15, 15, 40, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(25px);
+  background: rgba(10, 10, 30, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.info-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.info-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.info-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
 }
 
 .controls-panel {
-  backdrop-filter: blur(15px);
-  background: rgba(15, 15, 40, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  background: rgba(10, 10, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
+/* Custom slider */
 .speed-slider {
   -webkit-appearance: none;
   appearance: none;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 2px;
   outline: none;
+  cursor: pointer;
 }
 
 .speed-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #6366f1;
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5), 0 0 3px rgba(99, 102, 241, 0.8);
+  transition: transform 0.15s;
+}
+
+.speed-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
 
 .speed-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #6366f1;
   cursor: pointer;
@@ -135,19 +148,74 @@ body {
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
 }
 
+/* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .fade-in {
   animation: fadeIn 0.3s ease-out;
 }
 
-.saturn-ring {
-  position: absolute;
-  border: 2px solid rgba(210, 180, 140, 0.5);
-  border-radius: 50%;
-  transform: rotateX(70deg);
-  pointer-events: none;
+.slide-in {
+  animation: slideIn 0.4s ease-out;
+}
+
+/* Galaxy rotation */
+@keyframes galaxyRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.galaxy-spin {
+  animation: galaxyRotate 60s linear infinite;
+}
+
+/* Comet tail */
+@keyframes cometTrail {
+  0% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .info-panel {
+    width: 280px !important;
+    max-height: 70vh;
+  }
+  
+  .controls-panel {
+    padding: 8px 12px !important;
+  }
+}
+
+/* Selection color */
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: white;
 }
